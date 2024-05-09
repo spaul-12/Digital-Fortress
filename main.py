@@ -2,8 +2,21 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.users import user
 from config import config
+from contextlib import asynccontextmanager
+from services.utils import init_db,db_close
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Function that handles startup and shutdown events.
+    """
+    await init_db()
+    yield
+    await db_close()
+
+
+
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     config.get("CORS_ORIGIN"),
