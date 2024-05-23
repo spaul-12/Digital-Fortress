@@ -6,6 +6,7 @@ from datetime import datetime
 class Question(BaseModel):
     roundNumber : int
     question : str
+    answer : str
     imagePath : Union[str, None] = None
     audioPath : Union[str, None] = None
 
@@ -15,3 +16,4 @@ class GameDuration(BaseModel):
     leaderboardFreeze : bool
     leaderboardHide : bool
     maxQuestions : int
+

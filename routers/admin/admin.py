@@ -5,7 +5,7 @@ from sqlalchemy import select
 from schemas import round_schemas
 from middlewares import auth_bearer
 from models.player_model import Player
-from models.round_model import Duration
+from models.round_model import Duration, Round
 
 router = APIRouter()
 
@@ -31,3 +31,19 @@ async def addDuration(details: round_schemas.GameDuration, db: AsyncSession = De
     return {"status":200,"message":"successfully added"}
 
     
+@router.post('/addQuestion')
+async def addQuestion(round: round_schemas.Question, db: AsyncSession = Depends(get_db_session), dependencies = Depends(auth_bearer.JWTBearer())):
+    userId = dependencies['id']
+    staff = await isStaff(userId,db)
+    if not staff:
+        raise HTTPException(status_code=403,detail='Unauthorised')
+    
+    newQuestion = Round(roundNumber= round.roundNumber,question= round.question, answer= round.answer, imagePath= round.imagePath, audioPath= round.audioPath)
+
+    db.add(newQuestion)
+    await db.commit()
+
+    return {
+        "status":200,
+        "message": "successfully added"
+    }
