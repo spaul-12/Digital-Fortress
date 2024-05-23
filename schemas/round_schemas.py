@@ -17,3 +17,7 @@ class GameDuration(BaseModel):
     leaderboardHide : bool
     maxQuestions : int
 
+
+class PlayerResponse(BaseModel):
+    roundNumber: int
+    answer : str

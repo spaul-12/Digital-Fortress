@@ -4,24 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from models.player_model import Player
 from models.round_model import Round,Duration,Clue
+from schemas import round_schemas
 from config import config
 from middlewares import auth_bearer
 from datetime import datetime
+from .utils import getDuration, getPlayerDetails, getRoundNumber, getroundDetails
 
 router = APIRouter()
 
-
-async def getRoundNumber(id: int, db: AsyncSession):
-    query = select(Player).where(Player.id == id)
-    res = await db.execute(query)
-    player = res.scalars().first()
-    return player.roundNo
-
-async def getDuration(db: AsyncSession):
-    query = select(Duration)
-    res = await db.execute(query)
-    duration  = res.scalars().first()
-    return duration
 
 
 @router.get('/getRound')
@@ -52,5 +42,34 @@ async def getRound(dependencies= Depends(auth_bearer.JWTBearer()),db: AsyncSessi
         raise HTTPException(status_code=410,detail="Game ended")    
     
 
+
+@router.post('/checkRound')
+async def checkRound(response: round_schemas.PlayerResponse, db: AsyncSession = Depends(get_db_session), dependencies = Depends(auth_bearer.JWTBearer())):
+
+    userId = dependencies['id']
+    duration = await getDuration(db)
+
+    currTime = datetime.now()
+    if duration.startTime < currTime and currTime < duration.endTime:
+
+        player = await getPlayerDetails(userId, db)
+        round = await getroundDetails(response.roundNumber, db)
+
+        if round.answer == response.answer:
+            player.roundNo += 1
+            player.submitTime = datetime.now()
+            if duration.leaderboardFreeze:
+                db.add(player)
+                await db.commit()
+                return {"message":"correct answer"}
+            
+            else :
+                player.score += 10
+                db.add(player)
+                await db.commit()
+                return {"message": "correct answer"}
+        
+        else:
+            return {"message": "wrong answer"}
 
 
